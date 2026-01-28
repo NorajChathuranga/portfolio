@@ -314,17 +314,35 @@ const loadGitHubProjects = async () => {
 
   try {
     setProjectsStatus('Loading public GitHub projects...', true);
-    const response = await fetch(`https://api.github.com/users/${githubUser}/repos?per_page=100&sort=updated`, {
-      headers: {
-        Accept: 'application/vnd.github+json'
+    const cacheKey = `github_repos_${githubUser}`;
+    const cacheTimeKey = `${cacheKey}_time`;
+    const cached = localStorage.getItem(cacheKey);
+    const cachedTime = parseInt(localStorage.getItem(cacheTimeKey) || '0', 10);
+    const cacheAgeMs = Date.now() - cachedTime;
+    const cacheFresh = cached && cacheAgeMs < 1000 * 60 * 60 * 6;
+
+    let repos = [];
+    if (cacheFresh) {
+      repos = JSON.parse(cached);
+    } else {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const response = await fetch(`https://api.github.com/users/${githubUser}/repos?per_page=100&sort=updated`, {
+        headers: {
+          Accept: 'application/vnd.github+json'
+        },
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`GitHub API request failed (${response.status})`);
       }
-    });
 
-    if (!response.ok) {
-      throw new Error('GitHub API request failed');
+      repos = await response.json();
+      localStorage.setItem(cacheKey, JSON.stringify(repos));
+      localStorage.setItem(cacheTimeKey, Date.now().toString());
     }
-
-    const repos = await response.json();
     const publicRepos = repos
       .filter(repo => !repo.private && !repo.fork)
       .filter(repo => {
@@ -346,6 +364,25 @@ const loadGitHubProjects = async () => {
     setProjectsStatus('', false);
     selected.forEach(repo => projectsContainer.appendChild(createProjectCard(repo)));
   } catch (error) {
+    const cacheKey = `github_repos_${githubUser}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      const repos = JSON.parse(cached);
+      projectsContainer.innerHTML = '';
+      setProjectsStatus('', false);
+      repos
+        .filter(repo => !repo.private && !repo.fork)
+        .filter(repo => {
+          const name = repo.name.toLowerCase();
+          if (includeList.length && !includeList.includes(name)) return false;
+          if (excludeList.length && excludeList.includes(name)) return false;
+          return true;
+        })
+        .sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at))
+        .slice(0, limit)
+        .forEach(repo => projectsContainer.appendChild(createProjectCard(repo)));
+      return;
+    }
     setProjectsStatus('Unable to load GitHub projects right now.', true);
   }
 };
