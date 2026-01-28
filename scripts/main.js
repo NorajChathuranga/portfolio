@@ -181,7 +181,7 @@ if (typeTarget) {
     'Software Engineering & IoT',
     'Cybersecurity Research',
     'Machine Learning',
-    'Anomaly Detection'
+    'Full-Stack Developer'
   ];
   let pi = 0, ci = 0, deleting = false;
   const type = () => {
@@ -199,6 +199,158 @@ if (typeTarget) {
   };
   setTimeout(type, 600);
 }
+
+// GitHub Projects (Public Only)
+const projectsSection = document.querySelector('#projects');
+const projectsContainer = document.querySelector('#projects-list');
+const projectsStatus = document.querySelector('[data-projects-status]');
+
+const setProjectsStatus = (message, show = true) => {
+  if (!projectsStatus) return;
+  projectsStatus.textContent = message;
+  projectsStatus.classList.toggle('hidden', !show);
+};
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+};
+
+const createProjectCard = (repo) => {
+  const card = document.createElement('div');
+  card.className = 'project-card';
+
+  const imageLink = document.createElement('a');
+  imageLink.href = repo.html_url;
+  imageLink.target = '_blank';
+  imageLink.rel = 'noopener';
+
+  const image = document.createElement('img');
+  image.src = `https://opengraph.githubassets.com/1/${repo.full_name}`;
+  image.alt = `${repo.name} preview`;
+  image.loading = 'lazy';
+  imageLink.appendChild(image);
+
+  const content = document.createElement('div');
+  content.className = 'project-content';
+
+  const title = document.createElement('h3');
+  title.className = 'project-title';
+  const titleLink = document.createElement('a');
+  titleLink.href = repo.html_url;
+  titleLink.target = '_blank';
+  titleLink.rel = 'noopener';
+  titleLink.textContent = repo.name.replace(/-/g, ' ');
+  title.appendChild(titleLink);
+
+  const description = document.createElement('p');
+  description.className = 'project-description';
+  description.textContent = repo.description || 'No description provided yet.';
+
+  const meta = document.createElement('div');
+  meta.className = 'project-meta';
+  meta.innerHTML = `
+    <span><i class="fa-solid fa-star"></i> ${repo.stargazers_count}</span>
+    <span><i class="fa-solid fa-code-fork"></i> ${repo.forks_count}</span>
+    <span><i class="fa-regular fa-clock"></i> ${formatDate(repo.updated_at)}</span>
+  `;
+
+  const techStack = document.createElement('div');
+  techStack.className = 'tech-stack';
+  const topics = Array.isArray(repo.topics) ? repo.topics : [];
+  const stackItems = topics.length ? topics.slice(0, 4) : (repo.language ? [repo.language] : ['GitHub']);
+  stackItems.forEach(item => {
+    const tech = document.createElement('span');
+    tech.className = 'tech-item';
+    tech.textContent = item;
+    techStack.appendChild(tech);
+  });
+
+  const links = document.createElement('div');
+  links.className = 'project-links';
+  links.innerHTML = `
+    <a href="${repo.html_url}" target="_blank" rel="noopener"><i class="fab fa-github"></i> Code</a>
+  `;
+
+  if (repo.homepage) {
+    const liveLink = document.createElement('a');
+    liveLink.href = repo.homepage;
+    liveLink.target = '_blank';
+    liveLink.rel = 'noopener';
+    liveLink.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Live';
+    links.appendChild(liveLink);
+  }
+
+  content.appendChild(title);
+  content.appendChild(description);
+  content.appendChild(meta);
+  content.appendChild(techStack);
+  content.appendChild(links);
+
+  card.appendChild(imageLink);
+  card.appendChild(content);
+
+  return card;
+};
+
+const loadGitHubProjects = async () => {
+  if (!projectsSection || !projectsContainer) return;
+  const githubUser = projectsSection.dataset.githubUser;
+  const limit = parseInt(projectsSection.dataset.projectLimit || '6', 10);
+  const includeList = (projectsSection.dataset.projectInclude || '')
+    .split(',')
+    .map(item => item.trim().toLowerCase())
+    .filter(Boolean);
+  const excludeList = (projectsSection.dataset.projectExclude || '')
+    .split(',')
+    .map(item => item.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (!githubUser) {
+    setProjectsStatus('GitHub username not set.', true);
+    return;
+  }
+
+  try {
+    setProjectsStatus('Loading public GitHub projects...', true);
+    const response = await fetch(`https://api.github.com/users/${githubUser}/repos?per_page=100&sort=updated`, {
+      headers: {
+        Accept: 'application/vnd.github+json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('GitHub API request failed');
+    }
+
+    const repos = await response.json();
+    const publicRepos = repos
+      .filter(repo => !repo.private && !repo.fork)
+      .filter(repo => {
+        const name = repo.name.toLowerCase();
+        if (includeList.length && !includeList.includes(name)) return false;
+        if (excludeList.length && excludeList.includes(name)) return false;
+        return true;
+      })
+      .sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
+
+    const selected = publicRepos.slice(0, limit);
+    projectsContainer.innerHTML = '';
+
+    if (!selected.length) {
+      setProjectsStatus('No public GitHub projects found.', true);
+      return;
+    }
+
+    setProjectsStatus('', false);
+    selected.forEach(repo => projectsContainer.appendChild(createProjectCard(repo)));
+  } catch (error) {
+    setProjectsStatus('Unable to load GitHub projects right now.', true);
+  }
+};
+
+loadGitHubProjects();
 
 // Contact Form Submission with Popup Message
 document.getElementById('contactForm').addEventListener('submit', function(e) {

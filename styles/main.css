@@ -399,6 +399,65 @@ header {
     gap: 2rem;
 }
 
+/* Experience Section */
+.experience-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+}
+
+#experience {
+    margin-bottom: 2rem;
+}
+
+.experience-card {
+    background-color: var(--card-bg-color);
+    border-radius: 15px;
+    padding: 1.8rem;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border-color);
+    transition: transform 0.3s;
+}
+
+.experience-card:hover {
+    transform: translateY(-6px);
+}
+
+.experience-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.6rem;
+}
+
+.experience-header h3 {
+    font-size: 1.2rem;
+    color: var(--primary-color);
+}
+
+.experience-duration {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.experience-company {
+    color: var(--text-light);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.experience-list {
+    list-style: disc;
+    padding-left: 1.2rem;
+    color: var(--text-light);
+    display: grid;
+    gap: 0.5rem;
+}
+
 .skill-category {
     background-color: var(--card-bg-color);
     border-radius: 15px;
@@ -442,6 +501,16 @@ header {
 }
 
 /* Projects Section */
+.projects-status {
+    text-align: center;
+    color: var(--text-light);
+    margin-bottom: 1.5rem;
+}
+
+.projects-status.hidden {
+    display: none;
+}
+
 .projects-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -478,10 +547,34 @@ header {
     color: var(--primary-color);
 }
 
+.project-title a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.project-title a:hover {
+    text-decoration: underline;
+}
+
 .project-description {
     color: var(--text-light);
     margin-bottom: 1rem;
     font-size: 0.95rem;
+}
+
+.project-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    color: var(--text-light);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.project-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
 }
 
 .tech-stack {
@@ -516,6 +609,12 @@ header {
 
 .project-links a:hover {
     text-decoration: underline;
+}
+
+.projects-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
 }
 
 /* Contact Section */
@@ -869,6 +968,15 @@ footer {
 
     .projects-container {
         grid-template-columns: 1fr;
+    }
+
+    .experience-container {
+        grid-template-columns: 1fr;
+    }
+
+    .experience-header {
+        flex-direction: column;
+        align-items: flex-start;
     }
 
     .contact {
